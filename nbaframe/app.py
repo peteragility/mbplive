@@ -47,7 +47,9 @@ def liveToFoulVod(liveStartTime, freeThrowTime):
     else:
         foulStart = max(freeThrowTime - datetime.timedelta(seconds=foulSecondsBeforeFreeThrow), liveStartTime)
         jobId = str(uuid.uuid4())
-        foulId = 'nba-foul-' + foulStart.strftime('%Y%m%d%H%M%S')
+
+        foulStartHK = foulStart + datetime.timedelta(hours=8)
+        foulId = 'foul-' + foulStartHK.strftime('%Y%m%d-%H%M%S')
 
         print('insert foul capture info into database')
         response = nbaFoulTable.put_item(
@@ -55,7 +57,8 @@ def liveToFoulVod(liveStartTime, freeThrowTime):
                     'arn': mediaLiveArn,
                     'startTime': foulStart.strftime('%Y-%m-%dT%H:%M:%SZ'),
                     'endTime': freeThrowTime.strftime('%Y-%m-%dT%H:%M:%SZ'),
-                    'jobId': jobId
+                    'jobId': jobId,
+                    'foulId': foulId
                     }
                 )
         print (json.dumps(response))
