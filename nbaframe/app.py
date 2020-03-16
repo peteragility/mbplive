@@ -1,0 +1,101 @@
+import boto3
+from botocore.exceptions import ClientError
+from boto3.dynamodb.conditions import Key
+import json
+import datetime
+import decimal
+
+mediaLiveArn = 'arn:aws:medialive:us-west-2:072060221753:channel:3921754'
+captureSecPerFrame = 2
+customLabelModelArn = 'arn:aws:rekognition:us-west-2:072060221753:project/nba-foul/version/nba-foul.2020-03-08T22.09.07/1583676547493'
+
+#dynamodb = boto3.resource('dynamodb', region_name='ap-northeast-1')
+dynamodb = boto3.resource('dynamodb', region_name='us-west-2')
+nbaLiveTable = dynamodb.Table('nbalive')
+nbaFrameTable = dynamodb.Table('nbaframe')
+
+rekognition = boto3.client('rekognition', region_name='us-west-2')
+
+# Helper class to convert a DynamoDB item to JSON.
+class DecimalEncoder(json.JSONEncoder):
+    def default(self, o):
+        if isinstance(o, decimal.Decimal):
+            if abs(o) % 1 > 0:
+                return float(o)
+            else:
+                return int(o)
+        return super(DecimalEncoder, self).default(o)
+
+
+def lambda_handler(event, context):
+    #print(json.dumps(event.get('detail')))
+
+    statusCode = 200
+    retData = {}
+
+    for record in event['Records']:
+        if record['eventName'] == 'ObjectCreated:Put':
+
+            s3Event = record['s3']
+
+            response = nbaLiveTable.query(
+              Limit = 1,
+              ScanIndexForward = False,
+              KeyConditionExpression=Key('arn').eq(mediaLiveArn)
+            )
+            #print(json.dumps(response, indent=4, cls=DecimalEncoder))
+
+            for item in response['Items']:
+                print('retrieved latest medialive start time: ' + item.get('startTime'))
+                liveStartTime = datetime.datetime.strptime(item.get('startTime'), '%Y-%m-%dT%H:%M:%SZ')
+
+            retData['bucket'] = s3Event.get('bucket',{}).get('name')
+            retData['fileKey'] = s3Event.get('object',{}).get('key')
+
+            # use rekognition custom label to check if a frame is free throw related
+            response = rekognition.detect_custom_labels(
+                ProjectVersionArn=customLabelModelArn,
+                Image={
+                    'S3Object': {
+                        'Bucket': retData['bucket'],
+                        'Name': retData['fileKey']
+                    }
+                },
+                MaxResults=2,
+                MinConfidence=60
+            )
+
+            retData['freethrow'] = False
+            for label in response['CustomLabels']:
+                if label['Name'] == 'freethrow':
+                    retData['freethrow'] = True
+
+
+            if(retData['freethrow']):
+                # Analyze fileKey suffix for timestamp
+                retData['captureSeconds'] = int(retData['fileKey'].split('.')[1]) * captureSecPerFrame
+                fileElapsedSeconds = retData['captureSeconds'] - 3
+
+                captureTime = liveStartTime + datetime.timedelta(seconds=fileElapsedSeconds)
+
+                print('free throw scene found! insert capture time to ddb')
+                response = nbaFrameTable.put_item(
+                    Item={
+                    'frameId': retData['fileKey'],
+                    'bucket': retData['bucket'],
+                    'liveStartTime': liveStartTime.strftime('%Y-%m-%dT%H:%M:%SZ'),
+                    'captureTime': captureTime.strftime('%Y-%m-%dT%H:%M:%SZ'),
+                    'captureSeconds': retData['captureSeconds']
+                    }
+                )
+                #print(json.dumps(response, indent=4, cls=DecimalEncoder))
+            else:
+                print('No free throw found.')
+
+    
+    print (json.dumps(retData))
+
+    return {
+        "statusCode": statusCode,
+        "body": json.dumps(retData)
+    }

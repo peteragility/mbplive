@@ -1,0 +1,19 @@
+{
+    "version": "0",
+    "id": "b273dadb-7d1b-8840-97fa-cb5c3938a98f",
+    "detail-type": "MediaLive Channel State Change",
+    "source": "aws.medialive",
+    "account": "072060221753",
+    "time": "2020-03-08T14:16:24Z",
+    "region": "us-west-2",
+    "resources": [
+        "arn:aws:medialive:us-west-2:072060221753:channel:3921754"
+    ],
+    "detail": {
+        "pipelines_running_count": 1,
+        "state": "RUNNING",
+        "pipeline": "0",
+        "channel_arn": "arn:aws:medialive:us-west-2:072060221753:channel:3921754",
+        "message": "Pipeline started for channel"
+    }
+}

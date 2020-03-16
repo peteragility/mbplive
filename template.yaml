@@ -1,0 +1,59 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Sample SAM Template for mbp
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 10
+    Runtime: python3.7
+
+Resources:
+  NbaLiveFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: nbalive/
+      Handler: app.lambda_handler
+      Policies:
+        - AWSLambdaFullAccess # Managed Policy
+
+  NbaFrameFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: nbaframe/
+      Handler: app.lambda_handler
+      Policies:
+        - AWSLambdaFullAccess # Managed Policy
+        - AmazonRekognitionCustomLabelsFullAccess
+
+  NbaUploadFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: nbaupload/
+      Handler: app.lambda_handler
+      Policies:
+        - AWSLambdaFullAccess # Managed Policy
+
+Outputs:
+  # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
+  # Find out more about other implicit resources you can reference within SAM
+  # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
+  NbaLiveFunction:
+    Description: "NbaLive Lambda Function ARN"
+    Value: !GetAtt NbaLiveFunction.Arn
+  NbaFrameFunction:
+    Description: "NbaFrame Lambda Function ARN"
+    Value: !GetAtt NbaFrameFunction.Arn
+  NbaUploadFunction:
+    Description: "NbaUpload Lambda Function ARN"
+    Value: !GetAtt NbaUploadFunction.Arn
+  NbaLiveFunctionIamRole:
+    Description: "Implicit IAM Role created for NbaLiveFunction"
+    Value: !GetAtt NbaLiveFunctionRole.Arn
+  NbaFrameFunctionIamRole:
+    Description: "Implicit IAM Role created for NbaFrameFunction"
+    Value: !GetAtt NbaFrameFunctionRole.Arn
+  NbaUploadFunctionIamRole:
+    Description: "Implicit IAM Role created for NbaUploadFunction"
+    Value: !GetAtt NbaUploadFunctionRole.Arn
