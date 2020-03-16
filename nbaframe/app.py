@@ -9,7 +9,7 @@ import uuid
 mediaLiveArn = 'arn:aws:medialive:us-west-2:072060221753:channel:3921754'
 captureSecPerFrame = 2
 customLabelModelArn = 'arn:aws:rekognition:us-west-2:072060221753:project/nba-foul/version/nba-foul.2020-03-08T22.09.07/1583676547493'
-foulSecondsBeforeFreeThrow = 20
+foulSecondsBeforeFreeThrow = 30
 secondsBetweenFouls = 40
 
 #dynamodb = boto3.resource('dynamodb', region_name='ap-northeast-1')
