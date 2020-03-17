@@ -46,7 +46,7 @@ def liveToFoulVod(liveStartTime, freeThrowTime):
     if lastFoulTime >= freeThrowTime - datetime.timedelta(seconds=secondsBetweenFouls):
         pass
     else:
-        foulStart = freeThrowTime - datetime.timedelta(seconds=foulSecondsBeforeFreeThrow)
+        foulStart = max(freeThrowTime - datetime.timedelta(seconds=foulSecondsBeforeFreeThrow), liveStartTime)
 
         if foulStart >= liveStartTime:
             jobId = str(uuid.uuid4())
