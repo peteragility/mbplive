@@ -46,37 +46,39 @@ def liveToFoulVod(liveStartTime, freeThrowTime):
     if lastFoulTime >= freeThrowTime - datetime.timedelta(seconds=secondsBetweenFouls):
         pass
     else:
-        foulStart = max(freeThrowTime - datetime.timedelta(seconds=foulSecondsBeforeFreeThrow), liveStartTime)
-        jobId = str(uuid.uuid4())
+        foulStart = freeThrowTime - datetime.timedelta(seconds=foulSecondsBeforeFreeThrow)
 
-        foulStartHK = foulStart + datetime.timedelta(hours=8)
-        foulId = 'foul-' + foulStartHK.strftime('%Y%m%d-%H%M%S')
+        if foulStart >= liveStartTime:
+            jobId = str(uuid.uuid4())
 
-        print('insert foul capture info into database')
-        response = nbaFoulTable.put_item(
-                    Item={
-                    'arn': mediaLiveArn,
-                    'startTime': foulStart.strftime('%Y-%m-%dT%H:%M:%SZ'),
-                    'endTime': freeThrowTime.strftime('%Y-%m-%dT%H:%M:%SZ'),
-                    'jobId': jobId,
-                    'foulId': foulId
-                    }
-                )
-        print (json.dumps(response))
+            foulStartHK = foulStart + datetime.timedelta(hours=8)
+            foulId = 'foul-' + foulStartHK.strftime('%Y%m%d-%H%M%S')
 
-        print('create live to vod harvest job...')
-        response = mediapackage.create_harvest_job(
-            StartTime=foulStart.strftime('%Y-%m-%dT%H:%M:%SZ'),
-            EndTime=freeThrowTime.strftime('%Y-%m-%dT%H:%M:%SZ'),
-            Id=jobId,
-            OriginEndpointId='mbp-nba-channel',
-            S3Destination={
-                'BucketName': 'unicornflix-mbp-output-rdyo3ns5',
-                'ManifestKey': 'fouls/' + foulId +'/index.m3u8',
-                'RoleArn': 'arn:aws:iam::072060221753:role/mediapackage-harvest-role'
-            }
-        )
-        print (json.dumps(response))
+            print('insert foul capture info into database')
+            response = nbaFoulTable.put_item(
+                        Item={
+                        'arn': mediaLiveArn,
+                        'startTime': foulStart.strftime('%Y-%m-%dT%H:%M:%SZ'),
+                        'endTime': freeThrowTime.strftime('%Y-%m-%dT%H:%M:%SZ'),
+                        'jobId': jobId,
+                        'foulId': foulId
+                        }
+                    )
+            print (json.dumps(response))
+
+            print('create live to vod harvest job...')
+            response = mediapackage.create_harvest_job(
+                StartTime=foulStart.strftime('%Y-%m-%dT%H:%M:%SZ'),
+                EndTime=freeThrowTime.strftime('%Y-%m-%dT%H:%M:%SZ'),
+                Id=jobId,
+                OriginEndpointId='mbp-nba-channel',
+                S3Destination={
+                    'BucketName': 'unicornflix-mbp-output-rdyo3ns5',
+                    'ManifestKey': 'fouls/' + foulId +'/index.m3u8',
+                    'RoleArn': 'arn:aws:iam::072060221753:role/mediapackage-harvest-role'
+                }
+            )
+            print (json.dumps(response))
 
 
 def lambda_handler(event, context):
