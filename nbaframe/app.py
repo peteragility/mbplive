@@ -47,8 +47,9 @@ def liveToFoulVod(liveStartTime, freeThrowTime):
         pass
     else:
         foulStart = max(freeThrowTime - datetime.timedelta(seconds=foulSecondsBeforeFreeThrow), liveStartTime)
+        freeThrowFromStart = (freeThrowTime - liveStartTime).total_seconds()
 
-        if foulStart >= liveStartTime:
+        if foulStart >= liveStartTime and freeThrowFromStart > 60:
             jobId = str(uuid.uuid4())
 
             foulStartHK = foulStart + datetime.timedelta(hours=8)
@@ -132,7 +133,7 @@ def lambda_handler(event, context):
 
                 captureTime = liveStartTime + datetime.timedelta(seconds=fileElapsedSeconds)
 
-                print('free throw scene found! insert capture time to ddb')
+                print('free throw scene found!')
                 response = nbaFrameTable.put_item(
                     Item={
                     'frameId': retData['fileKey'],
